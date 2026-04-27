@@ -1,48 +1,55 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "mysql"
-  url = env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 
-// Mapeamento do ENUM do SQL
+// Atualizado para os tipos exigidos
 enum Role {
-  admin
-  user
+  ALUNO
+  SERVIDOR
+  ADMIN // Recomendado para o usuário que vai cadastrar os cardápios
+}
+
+enum MealType {
+  ALMOCO
+  JANTAR
 }
 
 model User {
-  id       Int    @id @default(autoincrement())
-  email    String @unique @db.VarChar(100)
-  password String @db.VarChar(100)
-  role     Role   @default(user)
-
-  @@map("users") // Garante que a tabela se chame "users"
-}
-
-model Event {
-  id          Int      @id @default(autoincrement())
-  title       String   @db.VarChar(100)
-  description String?  @db.Text // "TEXT" no SQL pode ser nulo por padrão se não especificado NOT NULL
-  date        DateTime @db.Date // Mapeia para o tipo DATE do SQL (sem hora)
-
-  volunteers Volunteer[]
-
-  @@map("events")
-}
-
-model Volunteer {
-  id       Int    @id @default(autoincrement())
-  name     String @db.VarChar(100)
-  email    String @db.VarChar(100)
+  id        Int        @id @default(autoincrement())
+  email     String     @unique @db.VarChar(100)
+  password  String     @db.VarChar(100)
+  role      Role       @default(ALUNO)
   
-  // Relacionamento (Foreign Key)
-  eventId  Int?   @map("event_id") // Mapeia a propriedade camelCase para a coluna snake_case do SQL
-  event    Event? @relation(fields: [eventId], references: [id])
+  favorites Favorite[] // Relacionamento com os cardápios favoritados
 
-  @@map("volunteers")
+  @@map("users")
+}
+
+model Menu {
+  id        Int        @id @default(autoincrement())
+  type      MealType
+  date      DateTime   @db.Date
+  items     Json       // Armazena o vetor de itens: ["Arroz", "Feijão", "Alface"]
+  
+  favorites Favorite[]
+
+  @@map("menus")
+}
+
+// Tabela intermediária para gerenciar os favoritos de cada usuário
+model Favorite {
+  id      Int  @id @default(autoincrement())
+  userId  Int  @map("user_id")
+  menuId  Int  @map("menu_id")
+
+  user    User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  menu    Menu @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, menuId]) // Garante que o usuário não favorite o mesmo cardápio duas vezes
+  @@map("favorites")
 }
