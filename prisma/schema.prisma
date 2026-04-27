@@ -1,0 +1,48 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url = env("DATABASE_URL")
+}
+
+// Mapeamento do ENUM do SQL
+enum Role {
+  admin
+  user
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  email    String @unique @db.VarChar(100)
+  password String @db.VarChar(100)
+  role     Role   @default(user)
+
+  @@map("users") // Garante que a tabela se chame "users"
+}
+
+model Event {
+  id          Int      @id @default(autoincrement())
+  title       String   @db.VarChar(100)
+  description String?  @db.Text // "TEXT" no SQL pode ser nulo por padrão se não especificado NOT NULL
+  date        DateTime @db.Date // Mapeia para o tipo DATE do SQL (sem hora)
+
+  volunteers Volunteer[]
+
+  @@map("events")
+}
+
+model Volunteer {
+  id       Int    @id @default(autoincrement())
+  name     String @db.VarChar(100)
+  email    String @db.VarChar(100)
+  
+  // Relacionamento (Foreign Key)
+  eventId  Int?   @map("event_id") // Mapeia a propriedade camelCase para a coluna snake_case do SQL
+  event    Event? @relation(fields: [eventId], references: [id])
+
+  @@map("volunteers")
+}
