@@ -1,5 +1,5 @@
 const userModel = require('../models/userModel'); // Importa o Model em vez do Prisma
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 /**
  * @class UserService

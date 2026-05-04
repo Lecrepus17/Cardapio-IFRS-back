@@ -21,6 +21,22 @@ router.use(authMiddleware);
 router.get('/current-week', MenuController.getCurrentWeek);
 
 /**
+ * @route GET /current-day
+ * @description Obtém todos os cardápios do dia atual
+ * @access Private (Requer autenticação)
+ * @returns {Array<Object>} Array de cardápios do dia atual
+ */
+router.get('/current-day', MenuController.getCurrentDay);
+
+/**
+ * @route GET /current
+ * @description Obtém o cardápio da próxima refeição baseada na hora atual
+ * @access Private (Requer autenticação)
+ * @returns {Object|null} Cardápio da próxima refeição
+ */
+router.get('/current', MenuController.getCurrent);
+
+/**
  * @route POST /
  * @description Cria um novo cardápio
  * @access Private (Requer autenticação - Idealmente ADMIN ou SERVIDOR)

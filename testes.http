@@ -1,0 +1,75 @@
+@baseUrl = http://localhost:3003
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Nywicm9sZSI6IkFMVU5PIiwiaWF0IjoxNzc3OTM2NTExLCJleHAiOjE3NzgwMjI5MTF9.42I0iZKO0ITjn287lgTGtePKYhwhz7L8esgkVnXwDcM
+
+### ============================================================================
+### AUTENTICAÇÃO
+### ============================================================================
+
+### 1. Registrar um novo usuário
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "teste@ifrs.edu.br",
+  "password": "123456",
+  "role": "ALUNO"
+}
+
+### 2. Fazer login (obter token JWT)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "teste@ifrs.edu.br",
+  "password": "123456"
+}
+
+### ============================================================================
+### CARDÁPIOS/MENUS (Todas as rotas exigem autenticação)
+### ============================================================================
+
+### 3. Obter cardápios da semana atual
+GET {{baseUrl}}/menu/current-week
+Authorization: Bearer {{token}}
+
+### 4. Obter cardápios do dia atual
+GET {{baseUrl}}/menu/current-day
+Authorization: Bearer {{token}}
+
+### 5. Obter cardápio da próxima refeição (baseado na hora atual)
+GET {{baseUrl}}/menu/current
+Authorization: Bearer {{token}}
+
+### 6. Obter todos os cardápios
+GET {{baseUrl}}/menu
+Authorization: Bearer {{token}}
+
+### 7. Obter cardápio por ID
+GET {{baseUrl}}/menu/1
+Authorization: Bearer {{token}}
+
+### 8. Criar um novo cardápio
+POST {{baseUrl}}/menu
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "type": "ALMOCO",
+  "date": "2026-05-05",
+  "items": ["Arroz", "Feijão", "Carne", "Salada"]
+}
+
+### 9. Atualizar um cardápio
+PUT {{baseUrl}}/menu/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "type": "JANTAR",
+  "date": "2026-05-05",
+  "items": ["Macarrão", "Frango", "Legumes"]
+}
+
+### 10. Deletar um cardápio
+DELETE {{baseUrl}}/menu/1
+Authorization: Bearer {{token}}

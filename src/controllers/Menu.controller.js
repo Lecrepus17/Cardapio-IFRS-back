@@ -65,7 +65,7 @@ class MenuController {
   /**
    * Obtém o próximo cardápio
    * @async
-   * @description Rota principal pedida no trabalho: Cardápios da semana atual
+   * @description Obtém o cardápio da próxima refeição baseada na hora atual
    * @param {Object} req - Objeto de requisição Express
    * @param {Object} res - Objeto de resposta Express
    * @param {Function} next - Função para passar controle ao próximo middleware
@@ -73,8 +73,8 @@ class MenuController {
    */
   async getCurrent(req, res, next) {
     try {
-      const menus = await menuService.getCurrent();
-      res.status(200).json(menus);
+      const menu = await menuService.getCurrentMenus();
+      res.status(200).json(menu);
     } catch (error) {
       next(error);
     }
