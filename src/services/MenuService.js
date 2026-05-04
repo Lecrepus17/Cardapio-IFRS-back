@@ -54,6 +54,80 @@ class MenuService {
       },
     });
   }
+  /**
+   * Obtém todos os cardápios do dia atual
+   * @async
+   * @returns {Promise<Array<Object>>} Array de cardápios do dia atual (café, almoço, jantar)
+   * @description Retorna todos os cardápios do dia corrente
+   */
+  async getCurrentDayMenus() {
+    const today = new Date();
+    const startOfDay = new Date(today);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(today);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    return await prisma.menu.findMany({
+      where: {
+        date: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+      },
+      orderBy: {
+        date: 'asc',
+      },
+    });
+  }
+
+  /**
+   * Obtém o cardápio da próxima refeição
+   * @async
+   * @returns {Promise<Object|null>} Cardápio da próxima refeição ou null se não encontrado
+   * @description Determina a próxima refeição baseada na hora atual:
+   * - Antes das 10h: Café da manhã
+   * - Entre 10h e 15h: Almoço
+   * - Entre 15h e 20h: Jantar
+   * - Depois das 20h: Café da manhã do próximo dia
+   */
+  async getCurrentMenus() {
+    const now = new Date();
+    const currentHour = now.getHours();
+    let mealType;
+    let targetDate = new Date(now);
+
+    if (currentHour < 9) {
+      // Antes das 10h: Café da manhã
+      mealType = 'CAFEMANHA';
+    } else if (currentHour < 13) {
+      // Entre 10h e 15h: Almoço
+      mealType = 'ALMOCO';
+    } else if (currentHour < 17) {
+      // Entre 15h e 20h: Jantar
+      mealType = 'JANTAR';
+    } else {
+      // Depois das 20h: Café da manhã do próximo dia
+      mealType = 'CAFEMANHA';
+      targetDate.setDate(targetDate.getDate() + 1);
+    }
+
+    const startOfDay = new Date(targetDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(targetDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    return await prisma.menu.findFirst({
+      where: {
+        type: mealType,
+        date: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+      },
+    });
+  }
 
   /**
    * Obtém todos os cardápios

@@ -45,6 +45,42 @@ class MenuController {
   }
 
   /**
+   * Obtém os cardápios do dia atual
+   * @async
+   * @description Rota principal pedida no trabalho: Cardápios da semana atual
+   * @param {Object} req - Objeto de requisição Express
+   * @param {Object} res - Objeto de resposta Express
+   * @param {Function} next - Função para passar controle ao próximo middleware
+   * @returns {void}
+   */
+  async getCurrentDay(req, res, next) {
+    try {
+      const menus = await menuService.getCurrentDayMenus();
+      res.status(200).json(menus);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Obtém o próximo cardápio
+   * @async
+   * @description Rota principal pedida no trabalho: Cardápios da semana atual
+   * @param {Object} req - Objeto de requisição Express
+   * @param {Object} res - Objeto de resposta Express
+   * @param {Function} next - Função para passar controle ao próximo middleware
+   * @returns {void}
+   */
+  async getCurrent(req, res, next) {
+    try {
+      const menus = await menuService.getCurrent();
+      res.status(200).json(menus);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Obtém todos os cardápios
    * @async
    * @param {Object} req - Objeto de requisição Express
