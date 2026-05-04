@@ -1,6 +1,15 @@
 const { logger } = require("../logger");
+
 /**
- * Este middleware é executado quando ocorre um erro durante o processamento.
+ * Middleware para tratamento centralizado de erros
+ * @param {Error} err - Objeto de erro capturado
+ * @param {Object} req - Objeto de requisição Express
+ * @param {string} req.requestId - ID único da requisição para rastreamento
+ * @param {Object} res - Objeto de resposta Express
+ * @param {Function} next - Função para passar controle ao próximo middleware
+ * @returns {void}
+ * @description Este middleware é executado quando ocorre um erro durante o processamento.
+ * Registra o erro no log e retorna uma resposta padronizada ao cliente.
  */
 function errorHandler(err, req, res, next) {
   const status = err.status || err.statusCode || 500;

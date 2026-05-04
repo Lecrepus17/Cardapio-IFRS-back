@@ -1,75 +1,52 @@
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const UserModel = require("../models/userModel");
-
-/**
- * @typedef {import('../models/userModel').UserPayload} UserPayload
- */
-
-/**
- * @typedef {object} LoginPayload
- * @property {string} email - O email para login.
- * @property {string} password - A senha para login.
- */
+const userModel = require('../models/userModel'); // Importa o Model em vez do Prisma
+const bcrypt = require('bcrypt');
 
 /**
  * @class UserService
- * @description Classe de serviço contendo a lógica de negócio para registro e autenticação de usuários.
+ * @description Serviço para gerenciar operações relacionadas a usuários
  */
 class UserService {
   /**
-   * @description Service para registrar um novo usuário.
-   * Verifica se o usuário já existe e criptografa a senha antes de salvar.
-   * @static
+   * Cria um novo usuário com senha hashada
    * @async
-   * @param {UserPayload} user - Os dados do usuário a serem registrados.
-   * @returns {Promise<{message: string, id: number}>} Uma Promise que resolve para um objeto com a mensagem de sucesso e o ID do novo usuário.
-   * @throws {Error} Lança um erro se o email fornecido já estiver em uso.
+   * @param {Object} data - Dados do usuário a ser criado
+   * @param {string} data.email - Email do usuário
+   * @param {string} data.password - Senha do usuário (será hashada)
+   * @param {string} [data.role='ALUNO'] - Papel/role do usuário (ALUNO, SERVIDOR, ADMIN)
+   * @returns {Promise<Object>} Usuário criado com ID e dados
+   * @throws {Error} Erro ao hashear a senha ou criar o usuário no banco
    */
-  static async registerUser(user) {
-    const { email, password, role } = user;
-    // Verifica se o e-mail já está cadastrado
-    const existing = await UserModel.findByEmail(email);
-    if (existing) {
-      throw new Error("Usuário já existe");
-    }
-    // Criptografa a senha antes de salvar no banco
-    const hashed = await bcrypt.hash(password, 10);
-    // Substitui a senha original pela criptografada
-    user.password = hashed;
-    // Cria o novo usuário e retorna seu ID
-    const id = await UserModel.create(user);
-    // Retorna os dados de sucesso (sem lançar erro)
-    return { message: "Usuário registrado com sucesso", id };
+  async createUser(data) {
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(data.password, salt);
+
+    // Repassa os dados para o Model criar no banco
+    return await userModel.create({
+      email: data.email,
+      password: hashedPassword,
+      role: data.role || 'ALUNO',
+    });
   }
 
   /**
-   * @description Service para autenticar um usuário e gerar um token JWT.
-   * @static
+   * Encontra um usuário pelo email
    * @async
-   * @param {LoginPayload} credentials - As credenciais de login do usuário.
-   * @returns {Promise<{token: string, user: {email: string, role: string}}>} Uma Promise que resolve para um objeto contendo o token JWT e informações básicas do usuário.
-   * @throws {Error} Lança um erro se o usuário não for encontrado ou se a senha for inválida.
+   * @param {string} email - Email do usuário a ser encontrado
+   * @returns {Promise<Object|null>} Usuário encontrado ou null se não existir
    */
-  static async loginUser({ email, password }) {
-    // Busca o usuário pelo e-mail
-    const user = await UserModel.findByEmail(email);
-    if (!user) {
-      throw new Error("Usuário não encontrado");
-    }
-    // Verifica se a senha fornecida é válida
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) {
-      throw new Error("Senha inválida");
-    }
-    // Gera o token JWT
-    const token = jwt.sign(
-      { email: user.email, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
-    // Retorna o token e o usuário para o controller
-    return { token, user: { email: user.email, role: user.role } };
+  async findUserByEmail(email) {
+    return await userModel.findByEmail(email);
+  }
+
+  /**
+   * Obtém um usuário pelo ID
+   * @async
+   * @param {number} id - ID do usuário
+   * @returns {Promise<Object|null>} Usuário encontrado ou null se não existir
+   */
+  async getUserById(id) {
+    return await userModel.findById(id);
   }
 }
-module.exports = UserService;
+
+module.exports = new UserService();

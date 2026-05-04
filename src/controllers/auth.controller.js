@@ -1,63 +1,89 @@
-const UserService = require("../services/UserService");
-
-/**
- * @typedef {import('express').Request} Request
- * @typedef {import('express').Response} Response
- */
+const userService = require('../services/userService');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 /**
  * @class AuthController
- * @description Controller responsável por gerenciar as requisições de autenticação.
+ * @description Controller para gerenciar operações de autenticação
  */
 class AuthController {
   /**
-   * @description Registra um novo usuário na aplicação.
-   * @route POST /register
-   * @static
+   * Registra um novo usuário no sistema
    * @async
-   * @param {Request} req - O objeto de requisição do Express. Espera-se que `req.body` contenha os dados do usuário (email, password, role).
-   * @param {Response} res - O objeto de resposta do Express.
-   * @returns {Promise<Response>} Retorna uma resposta JSON com a mensagem de sucesso e o ID do usuário (status 201) ou uma mensagem de erro (status 409).
+   * @param {Object} req - Objeto de requisição Express
+   * @param {Object} req.body - Dados do usuário a ser registrado
+   * @param {string} req.body.email - Email do usuário
+   * @param {string} req.body.password - Senha do usuário
+   * @param {string} [req.body.role] - Role/papel do usuário (padrão: ALUNO)
+   * @param {Object} res - Objeto de resposta Express
+   * @param {Function} next - Função para passar controle ao próximo middleware
+   * @returns {void}
+   * @description Verifica se o email já está registrado antes de criar o usuário
    */
-  static async register(req, res) {
+  async register(req, res, next) {
     try {
-      // Chama o serviço para registrar o usuário, passando os dados da requisição
-      const result = await UserService.registerUser(req.body);
-      // Retorna status 201 (Criado) com os dados retornados pelo serviço
-      return res.status(201).json(result);
+      const { email, password, role } = req.body;
+      
+      // Verifica se o usuário já existe
+      const userExists = await userService.findUserByEmail(email);
+      if (userExists) {
+        return res.status(400).json({ message: 'E-mail já cadastrado.' });
+      }
+
+      const user = await userService.createUser({ email, password, role });
+      
+      // Retorna o usuário criado (sem a senha, por segurança)
+      res.status(201).json({ id: user.id, email: user.email, role: user.role });
     } catch (error) {
-      // Em caso de erro (ex: usuário já existe), retorna status 409 (Conflito) com a mensagem do erro
-      return res.status(409).json({ message: error.message });
+      next(error);
     }
   }
 
   /**
-   * @description Autentica um usuário e retorna um token JWT.
-   * @route POST /login
-   * @static
+   * Autentica um usuário e retorna um token JWT
    * @async
-   * @param {Request} req - O objeto de requisição do Express. Espera-se que `req.body` contenha as credenciais (email, password).
-   * @param {Response} res - O objeto de resposta do Express.
-   * @returns {Promise<Response>} Retorna uma resposta JSON com o token e dados do usuário (status 200) ou uma mensagem de erro (status 401 ou 500).
+   * @param {Object} req - Objeto de requisição Express
+   * @param {Object} req.body - Credenciais do usuário
+   * @param {string} req.body.email - Email do usuário
+   * @param {string} req.body.password - Senha do usuário
+   * @param {Object} res - Objeto de resposta Express
+   * @param {Function} next - Função para passar controle ao próximo middleware
+   * @returns {void}
+   * @description Valida as credenciais do usuário e retorna um token JWT válido por 1 dia
    */
-  static async login(req, res) {
+  async login(req, res, next) {
     try {
-      // Chama o serviço para autenticar o usuário, passando os dados da requisição
-      const result = await UserService.loginUser(req.body);
-      // Retorna status 200 (OK) com o token JWT
-      return res.status(200).json(result); // envia { token, user }
+      const { email, password } = req.body;
+
+      const user = await userService.findUserByEmail(email);
+      if (!user) {
+        return res.status(401).json({ message: 'Credenciais inválidas.' });
+      }
+
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: 'Credenciais inválidas.' });
+      }
+
+      // Gera o Token JWT
+      const token = jwt.sign(
+        { id: user.id, role: user.role },
+        process.env.JWT_SECRET || 'sua_chave_secreta_aqui',
+        { expiresIn: '1d' }
+      );
+
+      res.status(200).json({
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role // ALUNO ou SERVIDOR
+        }
+      });
     } catch (error) {
-      
-      // Define o status apropriado com base na mensagem de erro
-      const status =
-        error.message === "Usuário não encontrado" ||
-        error.message === "Senha inválida"
-          ? 401 // Não autorizado
-          : 401; // Erro interno do servidor
-      // Retorna o status definido com a mensagem do erro
-      return res.status(status).json({ message: error.message });
+      next(error);
     }
   }
 }
 
-module.exports = AuthController;
+module.exports = new AuthController();

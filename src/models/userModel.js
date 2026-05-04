@@ -1,65 +1,54 @@
-const prisma = require("../config/prisma"); // Importa a instância configurada do Prisma
-
-/**
- * @typedef {object} UserPayload
- * @property {string} email - O email do usuário.
- * @property {string} password - A senha (hash) do usuário.
- * @property {string} [role='user'] - A permissão do usuário (ex: 'user', 'admin').
- */
-
-/**
- * @typedef {UserPayload} User
- * @property {number} id - O ID único do usuário.
- */
+const prisma = require('../config/prisma');
 
 /**
  * @class UserModel
- * @description Classe responsável pelas operações de banco de dados para usuários usando Prisma.
+ * @description Modelo de dados para operações de usuários no banco de dados
  */
 class UserModel {
   /**
-   * @description Busca um usuário no banco de dados pelo seu email.
-   * @static
+   * Cria um novo usuário no banco de dados
    * @async
-   * @param {string} email - O email do usuário a ser procurado.
-   * @returns {Promise<User|null>} Uma Promise que resolve para o objeto do usuário encontrado ou null se nenhum usuário for encontrado.
-   * @throws {Error} Lança um erro se a consulta ao banco de dados falhar.
+   * @param {Object} data - Dados do usuário a ser criado
+   * @param {string} data.email - Email do usuário
+   * @param {string} data.password - Senha do usuário (já hashada)
+   * @param {string} [data.role] - Role/papel do usuário
+   * @returns {Promise<Object>} Usuário criado com ID
+   * @throws {Error} Erro ao criar o usuário no banco de dados
    */
-  static async findByEmail(email) {
-    // findUnique é muito mais rápido que findFirst/query crua,
-    // mas exige que o campo 'email' tenha @unique no schema.prisma
-    const user = await prisma.user.findUnique({
-      where: {
-        email: email,
-      },
-    });
-
-    return user;
+  async create(data) {
+    return await prisma.user.create({ data });
   }
 
   /**
-   * @description Cria um novo usuário no banco de dados.
-   * @static
+   * Encontra um usuário pelo email
    * @async
-   * @param {UserPayload} user - O objeto contendo os dados do usuário a ser criado.
-   * @returns {Promise<number>} Uma Promise que resolve para o ID do usuário recém-criado.
-   * @throws {Error} Lança um erro se a inserção no banco de dados falhar (ex: email duplicado).
+   * @param {string} email - Email do usuário a ser encontrado
+   * @returns {Promise<Object|null>} Usuário encontrado com todos os campos ou null se não existir
+   * @throws {Error} Erro ao consultar o banco de dados
    */
-  static async create(user) {
-    const { email, password, role } = user;
+  async findByEmail(email) {
+    return await prisma.user.findUnique({
+      where: { email },
+    });
+  }
 
-    // O Prisma retorna o objeto criado inteiro, não apenas o ID.
-    const createdUser = await prisma.user.create({
-      data: {
-        email,
-        password,
-        role: role || undefined, // Se role for null/undefined, o Prisma usará o @default("user")
+  /**
+   * Encontra um usuário pelo ID (sem retornar a senha)
+   * @async
+   * @param {number|string} id - ID do usuário a ser encontrado
+   * @returns {Promise<Object|null>} Usuário encontrado com ID, email e role (sem senha) ou null se não existir
+   * @throws {Error} Erro ao consultar o banco de dados
+   */
+  async findById(id) {
+    return await prisma.user.findUnique({
+      where: { id: parseInt(id) },
+      select: {
+        id: true,
+        email: true,
+        role: true,
       },
     });
-
-    // Retornamos apenas o id para manter compatibilidade com seu código original
-    return createdUser.id;
   }
 }
 
-module.exports = UserModel;
+module.exports = new UserModel();

@@ -1,8 +1,19 @@
 const { v4: uuidv4 } = require("uuid");
 const { logger } = require("../logger");
+
 /**
- * Este middleware é executado antes das rotas.
- * Ele registra logs de cada requisição HTTP recebida
+ * Middleware para registro de logs de requisições HTTP
+ * @param {Object} req - Objeto de requisição Express
+ * @param {string} req.method - Método HTTP (GET, POST, etc)
+ * @param {string} req.originalUrl - URL original da requisição
+ * @param {string} req.ip - Endereço IP do cliente
+ * @param {Object} req.headers - Headers da requisição
+ * @param {Object} res - Objeto de resposta Express
+ * @param {Function} next - Função para passar controle ao próximo middleware
+ * @returns {void}
+ * @description Este middleware é executado antes das rotas.
+ * Ele registra logs de cada requisição HTTP recebida, gera um ID único,
+ * mede o tempo de execução e registra o status da resposta.
  */
 function requestLogger(req, res, next) {
   const start = process.hrtime.bigint(); // mede o tempo inicial (em nanossegundos)
